@@ -1,81 +1,120 @@
-import React, { useState } from 'react';
-import { Plus, Coffee, GlassWater, Sparkles, Citrus } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, GlassWater } from 'lucide-react';
 import { BeverageType } from '../types';
 
 interface QuickAddButtonsProps {
-  onAdd: (amountMl: number, beverageType: BeverageType) => void;
+  onAdd: (amountMl: number, beverageType?: BeverageType) => void;
   isLoading?: boolean;
 }
 
 const PRESET_AMOUNTS = [
-  { amount: 150, label: '150 ml', icon: '☕', name: 'Xícara / Copinho' },
-  { amount: 250, label: '250 ml', icon: '🥛', name: 'Copo Padrão' },
+  { amount: 150, label: '150 ml', icon: '☕', name: 'Xícara' },
+  { amount: 250, label: '250 ml', icon: '🥛', name: 'Copo' },
   { amount: 500, label: '500 ml', icon: '🍶', name: 'Garrafinha' },
   { amount: 750, label: '750 ml', icon: '🧴', name: 'Squeeze' },
 ];
 
-const BEVERAGES: { type: BeverageType; name: string; icon: any; color: string }[] = [
-  { type: 'water', name: 'Água Pura', icon: GlassWater, color: 'text-ocean-400 border-ocean-500/30' },
-  { type: 'lemon_water', name: 'Água c/ Limão', icon: Citrus, color: 'text-lime-400 border-lime-500/30' },
-  { type: 'tea', name: 'Chá Natural', icon: Coffee, color: 'text-emerald-400 border-emerald-500/30' },
-  { type: 'sports', name: 'Isotônico', icon: Sparkles, color: 'text-cyan-400 border-cyan-500/30' },
-];
-
 export const QuickAddButtons: React.FC<QuickAddButtonsProps> = ({ onAdd, isLoading = false }) => {
-  const [selectedBeverage, setSelectedBeverage] = useState<BeverageType>('water');
   const [showCustomModal, setShowCustomModal] = useState(false);
+  const [isClosingModal, setIsClosingModal] = useState(false);
+  const [hasEntered, setHasEntered] = useState(false);
   const [customAmount, setCustomAmount] = useState<string>('');
+
+  // Drag-to-dismiss com Pointer Capture e trava superior
+  const [dragY, setDragY] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const startYRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (showCustomModal) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      setIsClosingModal(false);
+      setDragY(0);
+      setIsDragging(false);
+      const timer = setTimeout(() => setHasEntered(true), 320);
+      return () => clearTimeout(timer);
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      setHasEntered(false);
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [showCustomModal]);
+
+  const handleOpenModal = () => {
+    setIsClosingModal(false);
+    setDragY(0);
+    setShowCustomModal(true);
+  };
+
+  const handleSmoothClose = () => {
+    setIsClosingModal(true);
+    setTimeout(() => {
+      setIsClosingModal(false);
+      setDragY(0);
+      setShowCustomModal(false);
+    }, 220);
+  };
+
+  // Pointer Events para captura contínua e 100% responsiva ao dedo
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (_) {}
+    startYRef.current = e.clientY;
+    setIsDragging(true);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    const deltaY = e.clientY - startYRef.current;
+    // Trava de limite superior: não permite subir acima do topo do modal (>= 0)
+    setDragY(Math.max(0, deltaY));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+    setIsDragging(false);
+    if (dragY > 75) {
+      handleSmoothClose();
+    } else {
+      setDragY(0);
+    }
+  };
 
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseInt(customAmount, 10);
     if (!isNaN(amount) && amount > 0) {
-      onAdd(amount, selectedBeverage);
+      onAdd(amount, 'water');
       setCustomAmount('');
-      setShowCustomModal(false);
+      handleSmoothClose();
     }
   };
 
   return (
-    <div className="w-full space-y-4">
-      {/* Seletor de Tipo de Bebida */}
-      <div className="flex items-center justify-between gap-1.5 p-1 bg-slate-900/80 backdrop-blur rounded-2xl border border-slate-800">
-        {BEVERAGES.map(bev => {
-          const isSelected = selectedBeverage === bev.type;
-          const Icon = bev.icon;
-          return (
-            <button
-              key={bev.type}
-              type="button"
-              onClick={() => setSelectedBeverage(bev.type)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                isSelected
-                  ? 'bg-ocean-600/30 text-ocean-300 border border-ocean-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{bev.name}</span>
-              <span className="sm:hidden">{bev.name.split(' ')[0]}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Botões Rápidos */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+    <div className="w-full space-y-2.5">
+      {/* Botões Rápidos por Tamanho do Recipiente (2x2) */}
+      <div className="grid grid-cols-2 gap-2.5">
         {PRESET_AMOUNTS.map(preset => (
           <button
             key={preset.amount}
             type="button"
             disabled={isLoading}
-            onClick={() => onAdd(preset.amount, selectedBeverage)}
-            className="group relative flex flex-col items-center justify-center p-3.5 bg-gradient-to-b from-slate-800/80 to-slate-900/90 hover:from-slate-750 hover:to-slate-850 active:scale-95 border border-slate-700/60 hover:border-ocean-500/50 rounded-2xl transition-all duration-200 shadow-md hover:shadow-ocean-950/40"
+            onClick={() => onAdd(preset.amount, 'water')}
+            className="group relative flex flex-col items-center justify-center p-3.5 bg-slate-850/80 hover:bg-slate-750 active:scale-95 border border-slate-700/70 hover:border-ocean-400/50 rounded-2xl transition-all shadow-sm"
           >
-            <span className="text-xl mb-1 transition-transform group-hover:scale-110">
+            <span className="text-2xl mb-1 transition-transform group-hover:scale-110">
               {preset.icon}
             </span>
-            <span className="text-base font-bold text-white group-hover:text-ocean-300 transition-colors">
+            <span className="text-base font-extrabold text-white group-hover:text-ocean-300 transition-colors">
               +{preset.label}
             </span>
             <span className="text-[10px] text-slate-400 font-medium">
@@ -86,25 +125,61 @@ export const QuickAddButtons: React.FC<QuickAddButtonsProps> = ({ onAdd, isLoadi
       </div>
 
       {/* Botão de Adição Customizada */}
-      <div className="flex justify-center">
+      <div className="flex justify-center pt-0.5">
         <button
           type="button"
-          onClick={() => setShowCustomModal(true)}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-ocean-300 bg-ocean-950/60 hover:bg-ocean-900/60 border border-ocean-800/60 hover:border-ocean-600/60 rounded-full transition-all duration-200 shadow-sm"
+          onClick={handleOpenModal}
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 text-xs font-bold text-ocean-300 bg-ocean-950/30 hover:bg-ocean-900/40 border border-ocean-700/40 rounded-2xl transition active:scale-98 shadow-sm"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-4 h-4" />
           Registrar quantidade personalizada
         </button>
       </div>
 
-      {/* Modal Customizado */}
+      {/* Modal Customizado (BottomSheet com Abertura/Fechamento Suaves e Drag Gesture) */}
       {showCustomModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-1">Quantidade Personalizada</h3>
-            <p className="text-xs text-slate-400 mb-4">Digite o volume em mililitros (ml) que você ingeriu.</p>
+        <div
+          onClick={handleSmoothClose}
+          className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm ${
+            isClosingModal ? 'animate-backdrop-exit pointer-events-none' : 'animate-backdrop-enter'
+          }`}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              transform: isClosingModal 
+                ? undefined 
+                : dragY > 0 
+                ? `translateY(${dragY}px)` 
+                : undefined,
+              transition: isDragging ? 'none' : hasEntered ? 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)' : undefined,
+            }}
+            className={`bg-slate-850 border-t sm:border border-slate-700 rounded-t-[32px] sm:rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl space-y-4 safe-bottom ${
+              isClosingModal ? 'animate-sheet-exit' : hasEntered ? '' : 'animate-sheet-enter'
+            }`}
+          >
+            {/* Mobile Drag Handle Interativo com Pointer Capture & Trava Superior */}
+            <div
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+              className="w-full py-3 -mt-3 flex justify-center cursor-grab active:cursor-grabbing touch-none select-none"
+            >
+              <div className="w-14 h-1.5 bg-slate-600/80 hover:bg-slate-500 rounded-full transition-colors pointer-events-none" />
+            </div>
 
-            <form onSubmit={handleCustomSubmit} className="space-y-4">
+            <div className="flex items-center gap-2.5 pb-2 border-b border-slate-750">
+              <div className="p-2 rounded-xl bg-ocean-500/15 text-ocean-400 border border-ocean-500/30">
+                <GlassWater className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white leading-tight">Adicionar Água</h3>
+                <p className="text-[11px] text-slate-400 leading-tight">Digite o volume em mililitros (ml)</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCustomSubmit} className="space-y-3.5">
               <div className="relative">
                 <input
                   type="number"
@@ -115,37 +190,37 @@ export const QuickAddButtons: React.FC<QuickAddButtonsProps> = ({ onAdd, isLoadi
                   value={customAmount}
                   onChange={e => setCustomAmount(e.target.value)}
                   placeholder="Ex: 350"
-                  className="w-full bg-slate-800/90 border border-slate-700 focus:border-ocean-500 focus:ring-2 focus:ring-ocean-500/20 text-white text-xl font-bold rounded-2xl px-4 py-3 outline-none transition-all placeholder:text-slate-500"
+                  className="w-full bg-slate-900 border border-slate-700 focus:border-ocean-400 text-white text-lg font-extrabold rounded-2xl px-4 py-3 outline-none placeholder:text-slate-500 shadow-inner"
                 />
-                <span className="absolute right-4 top-3.5 text-sm font-semibold text-slate-400">ml</span>
+                <span className="absolute right-4 top-3.5 text-xs font-bold text-slate-400">ml</span>
               </div>
 
-              {/* Botões prévios rápidos */}
-              <div className="flex gap-2">
+              {/* Presets Rápidos dentro do Modal */}
+              <div className="grid grid-cols-4 gap-1.5">
                 {[200, 350, 600, 1000].map(amt => (
                   <button
                     key={amt}
                     type="button"
                     onClick={() => setCustomAmount(String(amt))}
-                    className="flex-1 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition"
+                    className="py-2 text-[11px] font-bold bg-slate-800 hover:bg-slate-750 text-slate-200 rounded-xl transition active:scale-95 border border-slate-700/60"
                   >
                     {amt}ml
                   </button>
                 ))}
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => setShowCustomModal(false)}
-                  className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition"
+                  onClick={handleSmoothClose}
+                  className="flex-1 py-3 px-3 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-750 border border-slate-700/60 transition active:scale-95"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={!customAmount || parseInt(customAmount, 10) <= 0}
-                  className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-ocean-600 hover:bg-ocean-500 active:scale-95 disabled:opacity-50 transition shadow-lg shadow-ocean-600/30"
+                  className="flex-1 py-3 px-3 rounded-2xl text-xs font-bold text-white bg-ocean-500 hover:bg-ocean-400 active:scale-95 disabled:opacity-50 transition shadow-md shadow-ocean-500/30"
                 >
                   Adicionar
                 </button>

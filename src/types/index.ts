@@ -16,6 +16,8 @@ export interface UserProfile {
   daily_water_target_ml: number;
   reminder_interval_minutes: number;
   reminder_enabled: boolean;
+  reminder_times?: string[];
+  fcm_token?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -35,6 +37,8 @@ export interface DbProfileRow {
   qt_daily_water_target_ml: number;
   qt_reminder_interval_min: number;
   fl_reminder_enabled: boolean;
+  dc_reminder_times?: string[] | null;
+  dc_fcm_token?: string | null;
   dh_created_at?: string;
   dh_updated_at?: string;
 }

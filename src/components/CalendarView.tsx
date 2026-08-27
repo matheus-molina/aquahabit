@@ -51,64 +51,64 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const totalWaterMonth = currentMonthLogs.reduce((acc, curr) => acc + curr.intake_ml, 0);
 
   return (
-    <div className="w-full bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-5">
+    <div className="w-full bg-slate-800/85 border border-slate-700/60 rounded-3xl p-4 shadow-xl space-y-4">
       {/* Header do Mês e Navegação */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-white capitalize">
+          <h2 className="text-base font-bold text-white capitalize">
             {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
           </h2>
-          <p className="text-xs text-slate-400">
-            {completedDaysCount} dias com meta atingida este mês
+          <p className="text-[10px] text-slate-400">
+            {completedDaysCount} dias com meta batida este mês
           </p>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-slate-800/80 rounded-2xl p-1 border border-slate-700/50">
+        <div className="flex items-center gap-1 bg-slate-750/90 rounded-2xl p-1 border border-slate-700/60">
           <button
             type="button"
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl transition"
+            className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl transition active:scale-95"
             aria-label="Mês anterior"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-3.5 h-3.5" />
           </button>
           <button
             type="button"
             onClick={() => setCurrentMonth(new Date())}
-            className="px-2.5 py-1 text-xs font-semibold text-ocean-300 hover:bg-slate-700 rounded-xl transition"
+            className="px-2 py-0.5 text-[11px] font-bold text-ocean-300 hover:bg-slate-700 rounded-xl transition active:scale-95"
           >
             Hoje
           </button>
           <button
             type="button"
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl transition"
+            className="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded-xl transition active:scale-95"
             aria-label="Próximo mês"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
       {/* Cards de Resumo Rápido */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <div className="flex items-center gap-3 p-3 bg-slate-800/50 border border-slate-700/60 rounded-2xl">
-          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400">
-            <Flame className="w-4 h-4" />
+      <div className="grid grid-cols-2 gap-2">
+        <div className="flex items-center gap-2.5 p-2.5 bg-slate-850/80 border border-slate-700/70 rounded-2xl shadow-sm">
+          <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400">
+            <Flame className="w-3.5 h-3.5" />
           </div>
           <div>
-            <span className="text-xs text-slate-400 block font-medium">Sequência Atual</span>
-            <span className="text-base font-extrabold text-white">{streak} {streak === 1 ? 'dia' : 'dias'}</span>
+            <span className="text-[10px] text-slate-400 block font-medium">Sequência</span>
+            <span className="text-sm font-extrabold text-white">{streak} {streak === 1 ? 'dia' : 'dias'}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 p-3 bg-slate-800/50 border border-slate-700/60 rounded-2xl">
-          <div className="p-2.5 rounded-xl bg-ocean-500/10 text-ocean-400">
-            <Trophy className="w-4 h-4" />
+        <div className="flex items-center gap-2.5 p-2.5 bg-slate-850/80 border border-slate-700/70 rounded-2xl shadow-sm">
+          <div className="p-2 rounded-xl bg-ocean-500/15 text-ocean-400">
+            <Trophy className="w-3.5 h-3.5" />
           </div>
           <div>
-            <span className="text-xs text-slate-400 block font-medium">Total no Mês</span>
-            <span className="text-base font-extrabold text-white">{formatWaterAmount(totalWaterMonth)}</span>
+            <span className="text-[10px] text-slate-400 block font-medium">Total no Mês</span>
+            <span className="text-sm font-extrabold text-white">{formatWaterAmount(totalWaterMonth)}</span>
           </div>
         </div>
       </div>
@@ -116,16 +116,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       {/* Grade do Calendário */}
       <div>
         {/* Dias da semana */}
-        <div className="grid grid-cols-7 gap-1 text-center mb-2">
+        <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
           {weekDays.map(day => (
-            <span key={day} className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-1">
+            <span key={day} className="text-[10px] font-bold text-slate-400 uppercase tracking-wider py-0.5">
               {day}
             </span>
           ))}
         </div>
 
         {/* Células de Dias */}
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="grid grid-cols-7 gap-1">
           {calendarDays.map(day => {
             const dateKey = getLocalDateString(day);
             const isSelected = selectedDate === dateKey;
@@ -147,27 +147,27 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   onSelectDate(dateKey);
                   if (onClose) onClose();
                 }}
-                className={`relative flex flex-col items-center justify-center p-2 min-h-[52px] rounded-2xl transition-all duration-200 ${
+                className={`relative flex flex-col items-center justify-center p-1.5 min-h-[48px] rounded-2xl transition-all duration-200 ${
                   !isCurrentMonth
                     ? 'opacity-30 hover:opacity-70'
                     : 'opacity-100'
                 } ${
                   isSelected
-                    ? 'ring-2 ring-ocean-400 bg-ocean-950/60 shadow-lg shadow-ocean-500/20'
-                    : 'hover:bg-slate-800/80 bg-slate-900/40 border border-slate-800/60'
+                    ? 'ring-2 ring-ocean-400 bg-ocean-950/70 shadow-md shadow-ocean-500/20'
+                    : 'hover:bg-slate-750 bg-slate-850/60 border border-slate-700/50'
                 }`}
               >
                 {/* Status Indicator Circle */}
                 {isComplete ? (
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center mb-0.5 shadow-sm shadow-emerald-500/40">
-                    <Check className="w-3 h-3 stroke-[3]" />
+                  <div className="w-4 h-4 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center mb-0.5 shadow-sm shadow-emerald-500/40">
+                    <Check className="w-2.5 h-2.5 stroke-[3]" />
                   </div>
                 ) : hasIntake ? (
-                  <div className="w-5 h-5 rounded-full bg-ocean-600/30 border border-ocean-400 text-ocean-300 flex items-center justify-center mb-0.5 text-[9px] font-extrabold">
-                    <Droplet className="w-2.5 h-2.5 fill-ocean-400" />
+                  <div className="w-4 h-4 rounded-full bg-ocean-600/30 border border-ocean-400 text-ocean-300 flex items-center justify-center mb-0.5 text-[8px] font-extrabold">
+                    <Droplet className="w-2 h-2 fill-ocean-400" />
                   </div>
                 ) : (
-                  <div className="w-5 h-5 flex items-center justify-center mb-0.5" />
+                  <div className="w-4 h-4 flex items-center justify-center mb-0.5" />
                 )}
 
                 {/* Número do dia */}
@@ -177,15 +177,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       ? 'text-ocean-400 underline underline-offset-2'
                       : isSelected
                       ? 'text-white'
-                      : 'text-slate-300'
+                      : 'text-slate-200'
                   }`}
                 >
                   {format(day, 'd')}
                 </span>
 
-                {/* Micro barra ou porcentagem */}
+                {/* Micro barra */}
                 {hasIntake && !isComplete && (
-                  <div className="w-4 h-1 bg-slate-700 rounded-full mt-1 overflow-hidden">
+                  <div className="w-3.5 h-1 bg-slate-700 rounded-full mt-0.5 overflow-hidden">
                     <div 
                       className="h-full bg-ocean-400 rounded-full"
                       style={{ width: `${percentage}%` }}
@@ -199,17 +199,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       </div>
 
       {/* Legenda do Calendário */}
-      <div className="flex items-center justify-around pt-2 border-t border-slate-800/80 text-[11px] text-slate-400">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-emerald-500" />
+      <div className="flex items-center justify-around pt-2 border-t border-slate-700/60 text-[10px] text-slate-400">
+        <div className="flex items-center gap-1">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
           <span>Meta 100%+</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-ocean-600/40 border border-ocean-400" />
+        <div className="flex items-center gap-1">
+          <div className="w-2.5 h-2.5 rounded-full bg-ocean-600/40 border border-ocean-400" />
           <span>Parcial</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-slate-800 border border-slate-700" />
+        <div className="flex items-center gap-1">
+          <div className="w-2.5 h-2.5 rounded-full bg-slate-700 border border-slate-600" />
           <span>Sem registro</span>
         </div>
       </div>

@@ -1,0 +1,31 @@
+name: Hydration Reminder Cron
+
+on:
+  schedule:
+    # 14:00 BRT = 17:00 UTC
+    - cron: '0 17 * * *'
+    # 17:00 BRT = 20:00 UTC
+    - cron: '0 20 * * *'
+  workflow_dispatch: # Permite disparar manualmente para testar
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Hydration Reminder Script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://muqwxfolynitrxwkrvvh.supabase.co' }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FIREBASE_PROJECT_ID: 'aquahabit-web'
+        run: node scripts/send-hydration-reminders.js

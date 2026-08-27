@@ -13,8 +13,8 @@ interface WaterRingProgressProps {
 export const WaterRingProgress: React.FC<WaterRingProgressProps> = ({
   intakeMl,
   targetMl,
-  size = 260,
-  strokeWidth = 18,
+  size = 215,
+  strokeWidth = 16,
   isToday = true,
 }) => {
   const percentage = targetMl > 0 ? Math.min(Math.round((intakeMl / targetMl) * 100), 200) : 0;
@@ -26,9 +26,9 @@ export const WaterRingProgress: React.FC<WaterRingProgressProps> = ({
   const remainingMl = Math.max(0, targetMl - intakeMl);
 
   return (
-    <div className="relative flex flex-col items-center justify-center py-4">
-      {/* SVG Ring */}
-      <div className="relative" style={{ width: size, height: size }}>
+    <div className="relative flex flex-col items-center justify-center py-2 select-none">
+      {/* SVG Ring Container */}
+      <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
         {/* Glow Effect when 100%+ */}
         {isComplete && (
           <div 
@@ -79,37 +79,37 @@ export const WaterRingProgress: React.FC<WaterRingProgressProps> = ({
         </svg>
 
         {/* Center Content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
-          <div className="flex items-center gap-1 mb-1">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+          <div className="flex items-center gap-1 mb-0.5">
             {isComplete ? (
-              <span className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                <Award className="w-3.5 h-3.5" /> Meta Batida!
+              <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <Award className="w-3 h-3" /> Meta Batida!
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-xs font-medium text-ocean-400">
-                <Droplet className="w-3.5 h-3.5 text-ocean-400 fill-ocean-400" />
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-ocean-400">
+                <Droplet className="w-3 h-3 text-ocean-400 fill-ocean-400" />
                 {isToday ? 'Hoje' : 'Registrado'}
               </span>
             )}
           </div>
 
           <div className="flex items-baseline justify-center">
-            <span className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white">
+            <span className="text-4xl font-extrabold tracking-tight text-white">
               {percentage}%
             </span>
           </div>
 
-          <p className="text-xs sm:text-sm font-medium text-slate-300 mt-1">
-            <strong className="text-ocean-300 font-bold text-base">{formatWaterAmount(intakeMl)}</strong>
+          <p className="text-xs font-semibold text-slate-300 mt-0.5">
+            <strong className="text-ocean-300 font-bold text-sm">{formatWaterAmount(intakeMl)}</strong>
             <span className="text-slate-400"> / {formatWaterAmount(targetMl)}</span>
           </p>
 
           {!isComplete ? (
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-[10px] text-slate-400 mt-0.5 font-medium">
               Faltam <strong className="text-white">{formatWaterAmount(remainingMl)}</strong>
             </p>
           ) : (
-            <p className="text-[11px] text-emerald-400 mt-1 font-medium flex items-center gap-1">
+            <p className="text-[10px] text-emerald-400 mt-0.5 font-bold flex items-center gap-1">
               <Flame className="w-3 h-3 text-amber-400 fill-amber-400" /> +{formatWaterAmount(intakeMl - targetMl)} extras!
             </p>
           )}

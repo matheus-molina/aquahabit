@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { getSupabaseClient, isConfigured } from '../lib/supabase';
+import { requestNotificationPermissionAndGetToken, setupForegroundMessageListener } from '../lib/firebase';
 import { UserProfile, DbProfileRow } from '../types';
 import { calculateIMC, calculateDailyWaterTarget } from '../utils/healthCalculations';
 import { getLocalProfile, saveLocalProfile } from '../utils/offlineQueue';
@@ -16,6 +17,7 @@ interface AuthContextType {
   signInAsGuest: () => void;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  enablePushNotifications: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,6 +52,12 @@ export function mapDbProfileToDomain(row: DbProfileRow): UserProfile {
     daily_water_target_ml: row.qt_daily_water_target_ml || 2500,
     reminder_interval_minutes: row.qt_reminder_interval_min || 90,
     reminder_enabled: row.fl_reminder_enabled ?? true,
+    reminder_times: Array.isArray(row.dc_reminder_times) 
+      ? row.dc_reminder_times 
+      : typeof row.dc_reminder_times === 'string' 
+      ? JSON.parse(row.dc_reminder_times) 
+      : ['14:00', '17:00'],
+    fcm_token: row.dc_fcm_token || undefined,
     created_at: row.dh_created_at,
     updated_at: row.dh_updated_at,
   };
@@ -71,6 +79,8 @@ export function mapDomainToDbProfile(profile: UserProfile): DbProfileRow {
     qt_daily_water_target_ml: profile.daily_water_target_ml,
     qt_reminder_interval_min: profile.reminder_interval_minutes,
     fl_reminder_enabled: profile.reminder_enabled,
+    dc_reminder_times: profile.reminder_times || ['14:00', '17:00'],
+    dc_fcm_token: profile.fcm_token || null,
     dh_updated_at: new Date().toISOString(),
   };
 }
@@ -189,6 +199,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     initAuth();
 
+    // Listener para notificações em primeiro plano
+    setupForegroundMessageListener((payload) => {
+      const title = payload.notification?.title || 'AquaHabit';
+      const body = payload.notification?.body || 'Lembrete de hidratação!';
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, {
+          body,
+          icon: '/icons/icon-192x192.png'
+        });
+      }
+    });
+
     if (supabase) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
         setSession(newSession);
@@ -215,7 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     if (!supabase) {
-      alert('Por favor, configure a URL e a Anon Key do Supabase nas configurações.');
+      alert('Supabase não inicializado.');
       return;
     }
 
@@ -293,6 +315,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Ativar Notificações Push e salvar FCM Token
+  const enablePushNotifications = async (): Promise<boolean> => {
+    try {
+      const token = await requestNotificationPermissionAndGetToken();
+      if (token) {
+        await updateProfile({
+          fcm_token: token,
+          reminder_enabled: true,
+        });
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Erro ao ativar notificações push:', err);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -306,6 +346,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInAsGuest,
         signOut,
         updateProfile,
+        enablePushNotifications,
       }}
     >
       {children}
