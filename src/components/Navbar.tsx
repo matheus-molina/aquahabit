@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Droplets, 
   Flame, 
@@ -23,10 +23,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenOnboarding, onOpenNotifica
   const { user, profile, signInWithGoogle, signOut } = useAuth();
   const { isOnline, allLogs } = useWater();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const streak = calculateStreak(allLogs);
   const offlineQueue = getOfflineQueue();
 
   const isNotificationsActive = Boolean(profile?.reminder_enabled && profile?.fcm_token);
+
+  // Fechar menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/80 safe-top shadow-sm">
@@ -91,7 +107,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenOnboarding, onOpenNotifica
           <button
             type="button"
             onClick={onOpenOnboarding}
-            className="flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-bold transition active:scale-95 shadow-sm"
+            className="flex items-center gap-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-750 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-bold transition active:scale-95 shadow-sm"
             title="Ajustar dados corporais e IMC"
           >
             <Scale className="w-3 h-3 text-ocean-400" />
@@ -100,7 +116,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenOnboarding, onOpenNotifica
 
           {/* Usuário / Login Google */}
           {user ? (
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
                 type="button"
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -119,11 +135,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenOnboarding, onOpenNotifica
                 )}
               </button>
 
-              {/* Menu Dropdown do Usuário */}
+              {/* Menu Dropdown do Usuário (Opaco e com Alto Contraste) */}
               {showUserMenu && (
-                <div className="absolute right-0 top-9 w-48 bg-slate-850 border border-slate-700 rounded-2xl p-2 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-2.5 py-2 border-b border-slate-750 mb-1">
-                    <p className="text-xs font-bold text-white truncate">{profile?.full_name || 'Usuário'}</p>
+                <div className="absolute right-0 top-10 w-52 bg-slate-900 border border-slate-700/90 rounded-2xl p-2 shadow-2xl shadow-black/80 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-3 py-2 border-b border-slate-800 mb-1 bg-slate-950/40 rounded-xl">
+                    <p className="text-xs font-extrabold text-white truncate">{profile?.full_name || 'Usuário'}</p>
                     <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                   </div>
                   <button
@@ -132,9 +148,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenOnboarding, onOpenNotifica
                       setShowUserMenu(false);
                       onOpenNotifications();
                     }}
-                    className="w-full flex items-center gap-2 px-2.5 py-2 text-xs text-slate-200 hover:text-white hover:bg-slate-750 rounded-xl transition"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-800 rounded-xl transition active:scale-98"
                   >
-                    <Bell className="w-3.5 h-3.5 text-ocean-400" />
+                    <Bell className="w-4 h-4 text-ocean-400" />
                     <span>Lembretes Diários</span>
                   </button>
                   <button
@@ -143,9 +159,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenOnboarding, onOpenNotifica
                       setShowUserMenu(false);
                       onOpenOnboarding();
                     }}
-                    className="w-full flex items-center gap-2 px-2.5 py-2 text-xs text-slate-200 hover:text-white hover:bg-slate-750 rounded-xl transition"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-800 rounded-xl transition active:scale-98"
                   >
-                    <Settings className="w-3.5 h-3.5 text-ocean-400" />
+                    <Settings className="w-4 h-4 text-ocean-400" />
                     <span>Ajustar Perfil & IMC</span>
                   </button>
                   <button
@@ -154,9 +170,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenOnboarding, onOpenNotifica
                       setShowUserMenu(false);
                       signOut();
                     }}
-                    className="w-full flex items-center gap-2 px-2.5 py-2 text-xs text-rose-400 hover:bg-rose-950/40 rounded-xl transition"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-400 hover:bg-rose-950/50 rounded-xl transition active:scale-98"
                   >
-                    <LogOut className="w-3.5 h-3.5" />
+                    <LogOut className="w-4 h-4" />
                     <span>Sair da conta</span>
                   </button>
                 </div>

@@ -8,6 +8,10 @@ export default {
   theme: {
     extend: {
       colors: {
+        slate: {
+          750: '#253347',
+          850: '#152033',
+        },
         aqua: {
           50: '#f0fdfa',
           100: '#ccfbf1',
