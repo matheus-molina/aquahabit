@@ -42,11 +42,7 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
   onClose,
 }) => {
   const { profile, updateProfile, enablePushNotifications } = useAuth();
-  const [selectedPreset, setSelectedPreset] = useState<string>('2x');
-  const [selectedTimes, setSelectedTimes] = useState<string[]>(
-    profile?.reminder_times || ['14:00', '17:00']
-  );
-  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [selectedTimes, setSelectedTimes] = useState<string[]>(['14:00', '17:00']);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
@@ -56,6 +52,7 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const startYRef = useRef<number>(0);
 
+  // Sincronizar com o perfil ao abrir o modal
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -63,10 +60,14 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
       setIsClosing(false);
       setDragY(0);
       setIsDragging(false);
-      const timer = setTimeout(() => setHasEntered(true), 320);
+
       if (profile?.reminder_times && profile.reminder_times.length > 0) {
         setSelectedTimes(profile.reminder_times);
+      } else {
+        setSelectedTimes(['14:00', '17:00']);
       }
+
+      const timer = setTimeout(() => setHasEntered(true), 320);
       return () => clearTimeout(timer);
     } else {
       document.body.style.overflow = '';
@@ -80,6 +81,19 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
   }, [isOpen, profile?.reminder_times]);
 
   if (!isOpen && !isClosing) return null;
+
+  // Determinar preset ativo dinamicamente comparando os arrays
+  const getActivePresetId = () => {
+    const currentStr = [...selectedTimes].sort().join(',');
+    for (const preset of PRESET_SCHEDULES) {
+      if ([...preset.times].sort().join(',') === currentStr) {
+        return preset.id;
+      }
+    }
+    return 'custom';
+  };
+
+  const activePresetId = getActivePresetId();
 
   const handleSmoothClose = () => {
     setIsClosing(true);
@@ -102,7 +116,6 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDragging) return;
     const deltaY = e.clientY - startYRef.current;
-    // Trava de limite superior: não permite subir acima de 0px
     setDragY(Math.max(0, deltaY));
   };
 
@@ -120,14 +133,10 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
   };
 
   const handleSelectPreset = (preset: typeof PRESET_SCHEDULES[0]) => {
-    setSelectedPreset(preset.id);
     setSelectedTimes(preset.times);
-    setIsCustomMode(false);
   };
 
   const toggleHour = (hour: string) => {
-    setIsCustomMode(true);
-    setSelectedPreset('custom');
     if (selectedTimes.includes(hour)) {
       if (selectedTimes.length > 1) {
         setSelectedTimes(selectedTimes.filter(t => t !== hour));
@@ -141,12 +150,20 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
   const handleSaveNotificationSchedule = async () => {
     setIsSubmitting(true);
     try {
-      await enablePushNotifications();
+      // 1. Salvar os horários selecionados no perfil do usuário
       await updateProfile({
         reminder_enabled: true,
         reminder_times: selectedTimes,
         reminder_interval_minutes: 120,
       });
+
+      // 2. Solicitar permissão e obter FCM Token se ainda não tiver
+      try {
+        await enablePushNotifications();
+      } catch (err) {
+        console.warn('Permissão de push pendente ou dispensada:', err);
+      }
+
       localStorage.setItem('aquahabit_notification_prompted', 'true');
       handleSmoothClose();
     } catch (e) {
@@ -214,7 +231,7 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
 
             <div className="space-y-2">
               {PRESET_SCHEDULES.map(preset => {
-                const isSelected = selectedPreset === preset.id && !isCustomMode;
+                const isSelected = activePresetId === preset.id;
                 return (
                   <button
                     key={preset.id}
@@ -259,7 +276,7 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
                 Escolha os horários específicos:
               </label>
               <span className="text-[10px] text-ocean-400 font-bold">
-                {selectedTimes.length} selecionados
+                {selectedTimes.length} selecionado{selectedTimes.length > 1 ? 's' : ''}
               </span>
             </div>
 
@@ -273,7 +290,7 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
                     onClick={() => toggleHour(hour)}
                     className={`py-2 px-1 rounded-xl text-xs font-mono font-bold border transition-all active:scale-95 text-center ${
                       isActive
-                        ? 'bg-ocean-500 text-white border-ocean-400 shadow-sm shadow-ocean-500/30'
+                        ? 'bg-ocean-500 text-white border-ocean-400 shadow-sm shadow-ocean-500/30 font-extrabold'
                         : 'bg-slate-800/80 text-slate-400 border-slate-700/60 hover:text-slate-200'
                     }`}
                   >
@@ -300,7 +317,7 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
             onClick={handleSmoothClose}
             className="flex-1 py-3 px-3 rounded-2xl text-xs font-bold text-slate-300 hover:bg-slate-750 border border-slate-700/60 transition active:scale-95"
           >
-            Agora não
+            Cancelar
           </button>
           <button
             type="button"
@@ -309,11 +326,11 @@ export const NotificationSetupModal: React.FC<NotificationSetupModalProps> = ({
             className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 rounded-2xl text-xs font-bold text-white bg-ocean-500 hover:bg-ocean-400 active:scale-95 disabled:opacity-50 transition shadow-lg shadow-ocean-500/25"
           >
             {isSubmitting ? (
-              <span>Ativando...</span>
+              <span>Salvando...</span>
             ) : (
               <>
                 <Bell className="w-3.5 h-3.5" />
-                <span>Ativar Lembretes</span>
+                <span>Salvar Lembretes</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </>
             )}

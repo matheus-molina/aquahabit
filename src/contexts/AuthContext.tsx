@@ -34,10 +34,22 @@ const DEFAULT_PROFILE: UserProfile = {
   daily_water_target_ml: 3000,
   reminder_interval_minutes: 90,
   reminder_enabled: true,
+  reminder_times: ['14:00', '17:00'],
 };
 
 // Conversão DbProfileRow -> UserProfile
 export function mapDbProfileToDomain(row: DbProfileRow): UserProfile {
+  let times: string[] = ['14:00', '17:00'];
+  if (Array.isArray(row.dc_reminder_times)) {
+    times = row.dc_reminder_times;
+  } else if (typeof row.dc_reminder_times === 'string') {
+    try {
+      times = JSON.parse(row.dc_reminder_times);
+    } catch (_) {
+      times = ['14:00', '17:00'];
+    }
+  }
+
   return {
     id: row.id_profile,
     email: row.nm_email,
@@ -52,11 +64,7 @@ export function mapDbProfileToDomain(row: DbProfileRow): UserProfile {
     daily_water_target_ml: row.qt_daily_water_target_ml || 2500,
     reminder_interval_minutes: row.qt_reminder_interval_min || 90,
     reminder_enabled: row.fl_reminder_enabled ?? true,
-    reminder_times: Array.isArray(row.dc_reminder_times) 
-      ? row.dc_reminder_times 
-      : typeof row.dc_reminder_times === 'string' 
-      ? JSON.parse(row.dc_reminder_times) 
-      : ['14:00', '17:00'],
+    reminder_times: times,
     fcm_token: row.dc_fcm_token || undefined,
     created_at: row.dh_created_at,
     updated_at: row.dh_updated_at,
@@ -88,7 +96,7 @@ export function mapDomainToDbProfile(profile: UserProfile): DbProfileRow {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(() => getLocalProfile() || DEFAULT_PROFILE);
   const [isLoading, setIsLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
 
@@ -137,6 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           daily_water_target_ml: waterCalc.targetMl,
           reminder_interval_minutes: 90,
           reminder_enabled: true,
+          reminder_times: ['14:00', '17:00'],
         };
 
         const dbRow = mapDomainToDbProfile(newProfile);
@@ -272,19 +281,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!profile) return;
+    const current = profile || getLocalProfile() || DEFAULT_PROFILE;
 
     const updated: UserProfile = {
-      ...profile,
+      ...current,
       ...updates,
       updated_at: new Date().toISOString(),
     };
 
     if (updates.weight_kg !== undefined || updates.height_cm !== undefined || updates.activity_level !== undefined) {
-      const weight = updates.weight_kg ?? profile.weight_kg;
-      const height = updates.height_cm ?? profile.height_cm;
-      const activity = updates.activity_level ?? profile.activity_level;
-      const gender = updates.gender ?? profile.gender;
+      const weight = updates.weight_kg ?? current.weight_kg;
+      const height = updates.height_cm ?? current.height_cm;
+      const activity = updates.activity_level ?? current.activity_level;
+      const gender = updates.gender ?? current.gender;
 
       const imcResult = calculateIMC(weight, height);
       const waterResult = calculateDailyWaterTarget(weight, activity, gender, height);
@@ -296,6 +305,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
+    // Atualização imediata de estado e armazenamento local
     setProfile(updated);
     saveLocalProfile(updated);
 
@@ -307,7 +317,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .upsert(dbRow);
         
         if (error) {
-          console.warn('Erro ao atualizar perfil no Supabase (t_profiles):', error);
+          console.warn('Tentativa com campos completos falhou, tentando fallback:', error.message);
+          // Fallback caso alguma coluna opcional (ex: dc_reminder_times) ainda não tenha sido criada no Supabase
+          const { dc_reminder_times, dc_fcm_token, ...safeRow } = dbRow;
+          await supabase.from('t_profiles').upsert(safeRow);
         }
       } catch (err) {
         console.error('Erro na sincronização de perfil:', err);
