@@ -10,8 +10,15 @@ const envAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const savedUrl = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_URL) : null;
 const savedAnonKey = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_ANON) : null;
 
-export const supabaseUrl = savedUrl || envUrl;
-export const supabaseAnonKey = savedAnonKey || envAnonKey;
+export const isPreconfiguredViaEnv = Boolean(
+  envUrl && 
+  envAnonKey && 
+  envUrl.startsWith('https://') &&
+  !envUrl.includes('placeholder')
+);
+
+export const supabaseUrl = envUrl || savedUrl || '';
+export const supabaseAnonKey = envAnonKey || savedAnonKey || '';
 
 export const isConfigured = Boolean(
   supabaseUrl && 

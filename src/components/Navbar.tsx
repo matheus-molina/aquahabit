@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useWater } from '../contexts/WaterContext';
+import { isPreconfiguredViaEnv } from '../lib/supabase';
 import { calculateStreak } from '../utils/healthCalculations';
 import { getOfflineQueue } from '../utils/offlineQueue';
 
@@ -88,19 +89,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenOnboarding, onOpenSupabase
             <span className="font-bold text-ocean-300">{profile?.imc || 22.8}</span>
           </button>
 
-          {/* Botão de Configuração Supabase */}
-          <button
-            type="button"
-            onClick={onOpenSupabaseConfig}
-            className={`p-2 rounded-xl border transition ${
-              isSupabaseActive
-                ? 'bg-slate-800/80 hover:bg-slate-700 text-emerald-400 border-slate-700'
-                : 'bg-slate-800/40 hover:bg-slate-700 text-slate-400 border-slate-800'
-            }`}
-            title="Configurar Supabase & Banco de Dados"
-          >
-            <Database className="w-4 h-4" />
-          </button>
+          {/* Botão de Configuração Supabase (oculto se configurado via env na Vercel) */}
+          {!isPreconfiguredViaEnv && (
+            <button
+              type="button"
+              onClick={onOpenSupabaseConfig}
+              className={`p-2 rounded-xl border transition ${
+                isSupabaseActive
+                  ? 'bg-slate-800/80 hover:bg-slate-700 text-emerald-400 border-slate-700'
+                  : 'bg-slate-800/40 hover:bg-slate-700 text-slate-400 border-slate-800'
+              }`}
+              title="Configurar Supabase & Banco de Dados"
+            >
+              <Database className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Login / Usuário */}
           {user ? (

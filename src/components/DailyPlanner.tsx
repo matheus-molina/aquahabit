@@ -118,7 +118,7 @@ export const DailyPlanner: React.FC<DailyPlannerProps> = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+          <div className="space-y-2">
             {entries.map((entry) => {
               const bev = BEVERAGE_INFO[entry.beverage_type || 'water'] || BEVERAGE_INFO.water;
               const Icon = bev.icon;
