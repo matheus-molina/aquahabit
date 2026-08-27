@@ -4,6 +4,8 @@ const OFFLINE_QUEUE_KEY = 'aquahabit_offline_queue_v1';
 const LOCAL_ENTRIES_KEY = 'aquahabit_local_entries_v1';
 const LOCAL_LOGS_KEY = 'aquahabit_local_logs_v1';
 const LOCAL_PROFILE_KEY = 'aquahabit_local_profile_v1';
+const LOCAL_REMINDER_TIMES_KEY = 'aquahabit_reminder_times_v1';
+const LOCAL_FCM_TOKEN_KEY = 'aquahabit_fcm_token_v1';
 
 export function getOfflineQueue(): OfflineAction[] {
   try {
@@ -70,10 +72,51 @@ export function saveLocalLogs(logs: DailyLog[]): void {
   }
 }
 
+export function getLocalReminderTimes(): string[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_REMINDER_TIMES_KEY);
+    return raw ? JSON.parse(raw) : ['14:00', '17:00'];
+  } catch {
+    return ['14:00', '17:00'];
+  }
+}
+
+export function saveLocalReminderTimes(times: string[]): void {
+  try {
+    localStorage.setItem(LOCAL_REMINDER_TIMES_KEY, JSON.stringify(times));
+  } catch (e) {
+    console.error('Erro ao salvar horários locais:', e);
+  }
+}
+
+export function getLocalFcmToken(): string | null {
+  try {
+    return localStorage.getItem(LOCAL_FCM_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function saveLocalFcmToken(token: string): void {
+  try {
+    localStorage.setItem(LOCAL_FCM_TOKEN_KEY, token);
+  } catch (e) {
+    console.error('Erro ao salvar FCM token local:', e);
+  }
+}
+
 export function getLocalProfile(): UserProfile | null {
   try {
     const raw = localStorage.getItem(LOCAL_PROFILE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const prof: UserProfile = JSON.parse(raw);
+    if (!prof.reminder_times || prof.reminder_times.length === 0) {
+      prof.reminder_times = getLocalReminderTimes();
+    }
+    if (!prof.fcm_token) {
+      prof.fcm_token = getLocalFcmToken() || undefined;
+    }
+    return prof;
   } catch {
     return null;
   }
@@ -82,6 +125,12 @@ export function getLocalProfile(): UserProfile | null {
 export function saveLocalProfile(profile: UserProfile): void {
   try {
     localStorage.setItem(LOCAL_PROFILE_KEY, JSON.stringify(profile));
+    if (profile.reminder_times && profile.reminder_times.length > 0) {
+      saveLocalReminderTimes(profile.reminder_times);
+    }
+    if (profile.fcm_token) {
+      saveLocalFcmToken(profile.fcm_token);
+    }
   } catch (e) {
     console.error('Erro ao salvar perfil local:', e);
   }

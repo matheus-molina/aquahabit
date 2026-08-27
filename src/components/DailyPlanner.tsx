@@ -41,23 +41,24 @@ export const DailyPlanner: React.FC<DailyPlannerProps> = ({
   const todayStr = getLocalDateString(new Date());
   const isToday = selectedDate === todayStr;
 
-  const hasFcmToken = Boolean(profile?.fcm_token) || (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted');
+  const hasFcmToken = Boolean(profile?.reminder_enabled);
 
   // Disparo de teste imediato no dispositivo
   const handleSendTestPush = async () => {
     setIsSendingTest(true);
+    const timesStr = profile?.reminder_times?.join(', ') || '14:00 e 17:00';
     try {
       if ('serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.ready;
         reg.showNotification('Hora de se hidratar! 💧', {
-          body: 'Teste de notificação push: Tudo pronto para você receber seus lembretes diários às 14:00 e às 17:00!',
+          body: `Teste de notificação push: Tudo pronto para seus lembretes diários às ${timesStr}!`,
           icon: '/icons/icon-192x192.png',
           badge: '/icons/water-drop.svg',
           tag: 'test-hydration',
         } as any);
       } else if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('Hora de se hidratar! 💧', {
-          body: 'Teste de notificação push: Tudo pronto para você receber seus lembretes diários às 14:00 e às 17:00!',
+          body: `Teste de notificação push: Tudo pronto para seus lembretes diários às ${timesStr}!`,
           icon: '/icons/icon-192x192.png',
         });
       }

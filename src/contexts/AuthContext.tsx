@@ -4,7 +4,14 @@ import { getSupabaseClient, isConfigured } from '../lib/supabase';
 import { requestNotificationPermissionAndGetToken, setupForegroundMessageListener } from '../lib/firebase';
 import { UserProfile, DbProfileRow } from '../types';
 import { calculateIMC, calculateDailyWaterTarget } from '../utils/healthCalculations';
-import { getLocalProfile, saveLocalProfile } from '../utils/offlineQueue';
+import { 
+  getLocalProfile, 
+  saveLocalProfile, 
+  getLocalReminderTimes, 
+  saveLocalReminderTimes,
+  getLocalFcmToken,
+  saveLocalFcmToken
+} from '../utils/offlineQueue';
 
 interface AuthContextType {
   user: User | null;
@@ -39,16 +46,18 @@ const DEFAULT_PROFILE: UserProfile = {
 
 // Conversão DbProfileRow -> UserProfile
 export function mapDbProfileToDomain(row: DbProfileRow): UserProfile {
-  let times: string[] = ['14:00', '17:00'];
-  if (Array.isArray(row.dc_reminder_times)) {
+  let times: string[] = getLocalReminderTimes();
+  if (Array.isArray(row.dc_reminder_times) && row.dc_reminder_times.length > 0) {
     times = row.dc_reminder_times;
   } else if (typeof row.dc_reminder_times === 'string') {
     try {
       times = JSON.parse(row.dc_reminder_times);
     } catch (_) {
-      times = ['14:00', '17:00'];
+      times = getLocalReminderTimes();
     }
   }
+
+  const fcmToken = row.dc_fcm_token || getLocalFcmToken() || undefined;
 
   return {
     id: row.id_profile,
@@ -65,7 +74,7 @@ export function mapDbProfileToDomain(row: DbProfileRow): UserProfile {
     reminder_interval_minutes: row.qt_reminder_interval_min || 90,
     reminder_enabled: row.fl_reminder_enabled ?? true,
     reminder_times: times,
-    fcm_token: row.dc_fcm_token || undefined,
+    fcm_token: fcmToken,
     created_at: row.dh_created_at,
     updated_at: row.dh_updated_at,
   };
@@ -145,7 +154,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           daily_water_target_ml: waterCalc.targetMl,
           reminder_interval_minutes: 90,
           reminder_enabled: true,
-          reminder_times: ['14:00', '17:00'],
+          reminder_times: getLocalReminderTimes(),
+          fcm_token: getLocalFcmToken() || undefined,
         };
 
         const dbRow = mapDomainToDbProfile(newProfile);
@@ -171,7 +181,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
 
       if (!supabase) {
-        // Modo Local / Convidado
         const localProf = getLocalProfile() || DEFAULT_PROFILE;
         setProfile(localProf);
         setIsGuest(true);
@@ -281,51 +290,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    const current = profile || getLocalProfile() || DEFAULT_PROFILE;
-
-    const updated: UserProfile = {
-      ...current,
-      ...updates,
-      updated_at: new Date().toISOString(),
-    };
-
-    if (updates.weight_kg !== undefined || updates.height_cm !== undefined || updates.activity_level !== undefined) {
-      const weight = updates.weight_kg ?? current.weight_kg;
-      const height = updates.height_cm ?? current.height_cm;
-      const activity = updates.activity_level ?? current.activity_level;
-      const gender = updates.gender ?? current.gender;
-
-      const imcResult = calculateIMC(weight, height);
-      const waterResult = calculateDailyWaterTarget(weight, activity, gender, height);
-
-      updated.imc = imcResult.imc;
-      updated.imc_classification = imcResult.classification;
-      if (!updates.daily_water_target_ml) {
-        updated.daily_water_target_ml = waterResult.targetMl;
-      }
+    if (updates.reminder_times) {
+      saveLocalReminderTimes(updates.reminder_times);
+    }
+    if (updates.fcm_token) {
+      saveLocalFcmToken(updates.fcm_token);
     }
 
-    // Atualização imediata de estado e armazenamento local
-    setProfile(updated);
-    saveLocalProfile(updated);
+    setProfile(prevProfile => {
+      const current = prevProfile || getLocalProfile() || DEFAULT_PROFILE;
+      const updated: UserProfile = {
+        ...current,
+        ...updates,
+        reminder_times: updates.reminder_times || current.reminder_times || getLocalReminderTimes(),
+        fcm_token: updates.fcm_token !== undefined ? updates.fcm_token : (current.fcm_token || getLocalFcmToken() || undefined),
+        updated_at: new Date().toISOString(),
+      };
 
-    if (supabase && user) {
-      try {
-        const dbRow = mapDomainToDbProfile(updated);
-        const { error } = await supabase
-          .from('t_profiles')
-          .upsert(dbRow);
-        
-        if (error) {
-          console.warn('Tentativa com campos completos falhou, tentando fallback:', error.message);
-          // Fallback caso alguma coluna opcional (ex: dc_reminder_times) ainda não tenha sido criada no Supabase
-          const { dc_reminder_times, dc_fcm_token, ...safeRow } = dbRow;
-          await supabase.from('t_profiles').upsert(safeRow);
+      if (updates.weight_kg !== undefined || updates.height_cm !== undefined || updates.activity_level !== undefined) {
+        const weight = updates.weight_kg ?? current.weight_kg;
+        const height = updates.height_cm ?? current.height_cm;
+        const activity = updates.activity_level ?? current.activity_level;
+        const gender = updates.gender ?? current.gender;
+
+        const imcResult = calculateIMC(weight, height);
+        const waterResult = calculateDailyWaterTarget(weight, activity, gender, height);
+
+        updated.imc = imcResult.imc;
+        updated.imc_classification = imcResult.classification;
+        if (!updates.daily_water_target_ml) {
+          updated.daily_water_target_ml = waterResult.targetMl;
         }
-      } catch (err) {
-        console.error('Erro na sincronização de perfil:', err);
       }
-    }
+
+      saveLocalProfile(updated);
+
+      if (supabase && user) {
+        const dbRow = mapDomainToDbProfile(updated);
+        (async () => {
+          try {
+            const { error } = await supabase.from('t_profiles').upsert(dbRow);
+            if (error) {
+              console.warn('Upsert completo retornou erro, tentando salvar campos base:', error.message);
+              const { dc_reminder_times, dc_fcm_token, ...safeRow } = dbRow;
+              await supabase.from('t_profiles').upsert(safeRow);
+            }
+          } catch (e) {
+            console.error('Erro na sincronização de perfil com Supabase:', e);
+          }
+        })();
+      }
+
+      return updated;
+    });
   };
 
   // Ativar Notificações Push e salvar FCM Token
@@ -333,6 +350,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const token = await requestNotificationPermissionAndGetToken();
       if (token) {
+        saveLocalFcmToken(token);
         await updateProfile({
           fcm_token: token,
           reminder_enabled: true,
