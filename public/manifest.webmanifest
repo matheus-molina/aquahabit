@@ -1,20 +1,55 @@
 {
   "name": "AquaHabit - Hidratação Diária",
   "short_name": "AquaHabit",
-  "description": "Controle diário de consumo de água, cálculo de IMC e diário de hidratação inteligente",
+  "description": "Controle diário de ingestão de água, cálculo de IMC e diário de hidratação inteligente",
   "start_url": "/",
   "id": "/",
   "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay"],
   "background_color": "#0f172a",
   "theme_color": "#0284c7",
   "orientation": "portrait-primary",
   "categories": ["health", "lifestyle", "fitness"],
   "icons": [
     {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "/icons/water-drop.svg",
-      "sizes": "192x192 512x512",
+      "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Adicionar 250ml",
+      "short_name": "+250ml",
+      "description": "Registrar um copo de água rapidamente",
+      "url": "/?quick=250",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ver Calendário",
+      "short_name": "Calendário",
+      "description": "Abrir histórico mensal de hidratação",
+      "url": "/?tab=calendar",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     }
   ]
 }

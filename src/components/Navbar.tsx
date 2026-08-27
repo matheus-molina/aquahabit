@@ -26,8 +26,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenOnboarding, onOpenSupabase
   const offlineQueue = getOfflineQueue();
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80">
-      <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+    <header className="sticky top-0 z-30 w-full bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 safe-top">
+      <div className="max-w-2xl mx-auto px-4 py-2.5 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-2xl bg-gradient-to-tr from-ocean-600 to-ocean-400 text-white shadow-md shadow-ocean-500/30">

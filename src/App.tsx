@@ -40,7 +40,7 @@ const MainAppContent: React.FC = () => {
   const isSelectedDateToday = selectedDate === todayStr;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-ocean-500 selection:text-white pb-20">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-ocean-500 selection:text-white pb-24">
       {/* Top Navbar */}
       <Navbar
         onOpenOnboarding={() => setShowOnboarding(true)}
@@ -114,13 +114,13 @@ const MainAppContent: React.FC = () => {
         )}
       </main>
 
-      {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-slate-950/90 backdrop-blur-lg border-t border-slate-800/80 max-w-2xl mx-auto">
-        <div className="flex items-center justify-around py-2 px-3">
+      {/* Bottom Navigation Bar (Floating Native TabBar with Safe Bottom) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 bg-slate-950/95 backdrop-blur-lg border-t border-slate-800/80 safe-bottom">
+        <div className="max-w-2xl mx-auto flex items-center justify-around py-2 px-3">
           <button
             type="button"
             onClick={() => setActiveTab('planner')}
-            className={`flex flex-col items-center gap-1 py-1 px-4 rounded-2xl transition-all duration-200 ${
+            className={`flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all duration-200 ${
               activeTab === 'planner'
                 ? 'text-ocean-400 font-bold scale-105'
                 : 'text-slate-400 hover:text-slate-200'
@@ -133,7 +133,7 @@ const MainAppContent: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('calendar')}
-            className={`flex flex-col items-center gap-1 py-1 px-4 rounded-2xl transition-all duration-200 ${
+            className={`flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all duration-200 ${
               activeTab === 'calendar'
                 ? 'text-ocean-400 font-bold scale-105'
                 : 'text-slate-400 hover:text-slate-200'
@@ -146,7 +146,7 @@ const MainAppContent: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('stats')}
-            className={`flex flex-col items-center gap-1 py-1 px-4 rounded-2xl transition-all duration-200 ${
+            className={`flex flex-col items-center gap-1 py-1.5 px-4 rounded-2xl transition-all duration-200 ${
               activeTab === 'stats'
                 ? 'text-ocean-400 font-bold scale-105'
                 : 'text-slate-400 hover:text-slate-200'

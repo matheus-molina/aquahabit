@@ -6,12 +6,25 @@
   color-scheme: dark;
 }
 
-body {
+html, body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
   user-select: none;
+  -webkit-user-select: none;
+  background-color: #020617;
+}
+
+/* Safe Area Insets for Mobile / iOS Notch / Dynamic Island / Bottom Home Bar */
+.safe-top {
+  padding-top: max(env(safe-area-inset-top), 12px);
+}
+
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 12px);
 }
 
 /* Custom Scrollbar */
